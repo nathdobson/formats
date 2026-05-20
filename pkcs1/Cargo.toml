@@ -19,7 +19,8 @@ der = { version = "0.7", features = ["oid"] }
 spki = { version = "0.7" }
 
 # optional dependencies
-pkcs8 = { version = "0.10", optional = true, default-features = false }
+#pkcs8 = { version = "0.10", optional = true, default-features = false }
+pkcs8 = { path="../../formats-pkcs8/pkcs8", optional = true, default-features = false }
 
 [dev-dependencies]
 const-oid = { version = "0.9", features = ["db"] } # TODO: path = "../const-oid"
