@@ -16,7 +16,7 @@ rust-version = "1.60"
 
 [dependencies]
 #der = { version = "0.7", features = ["oid"] }
-der = { path="../../formats-der-0.7.10/der", features = ["oid"] }
+der = { path="../../formats-der-0.7/der", features = ["oid"] }
 #spki = { version = "0.7" }
 spki = { path="../../formats-spki/spki" }
 
