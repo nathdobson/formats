@@ -22,7 +22,7 @@ der = { path="../../formats-der-0.7/der", features = ["oid"] }
 spki = { path="../../formats-spki/spki"}
 # optional dependencies
 rand_core = { version = "0.6", optional = true, default-features = false }
-pkcs5 = { version = "0.7", optional = true, path = "../pkcs5" }
+pkcs5 = { version = "0.7", optional = true }
 subtle = { version = "2", optional = true, default-features = false }
 
 [dev-dependencies]
