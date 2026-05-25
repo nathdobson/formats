@@ -23,6 +23,7 @@ spki = { path="../../formats-spki/spki" }
 # optional dependencies
 #pkcs8 = { version = "0.10", optional = true, default-features = false }
 pkcs8 = { path="../../formats-pkcs8/pkcs8", optional = true, default-features = false }
+fallible_vec = {path="../../rust_fallible_vec"}
 
 [dev-dependencies]
 const-oid = { version = "0.9", features = ["db"] } # TODO: path = "../const-oid"

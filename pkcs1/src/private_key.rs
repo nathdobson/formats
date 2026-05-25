@@ -16,6 +16,9 @@ use {self::other_prime_info::OtherPrimeInfo, alloc::vec::Vec, der::SecretDocumen
 #[cfg(feature = "pem")]
 use der::pem::PemLabel;
 
+#[cfg(feature = "alloc")]
+use fallible_vec::SliceExt;
+
 /// PKCS#1 RSA Private Keys as defined in [RFC 8017 Appendix 1.2].
 ///
 /// ASN.1 structure containing a serialized RSA private key:
@@ -39,7 +42,6 @@ use der::pem::PemLabel;
 /// presence of the `other_prime_infos` field.
 ///
 /// [RFC 8017 Appendix 1.2]: https://datatracker.ietf.org/doc/html/rfc8017#appendix-A.1.2
-#[derive(Clone)]
 pub struct RsaPrivateKey<'a> {
     /// `n`: RSA modulus.
     pub modulus: UintRef<'a>,
@@ -68,6 +70,25 @@ pub struct RsaPrivateKey<'a> {
     /// Additional primes `r_3`, ..., `r_u`, in order, if this is a multi-prime
     /// RSA key (i.e. `version` is `multi`).
     pub other_prime_infos: Option<OtherPrimeInfos<'a>>,
+}
+
+impl<'a> Clone for RsaPrivateKey<'a> {
+    fn clone(&self) -> Self {
+        RsaPrivateKey {
+            modulus: self.modulus,
+            public_exponent: self.public_exponent,
+            private_exponent: self.private_exponent,
+            prime1: self.prime1,
+            prime2: self.prime2,
+            exponent1: self.exponent1,
+            exponent2: self.exponent2,
+            coefficient: self.coefficient,
+            other_prime_infos: self
+                .other_prime_infos
+                .as_ref()
+                .map(|x| x.try_to_vec().expect("TODO")),
+        }
+    }
 }
 
 impl<'a> RsaPrivateKey<'a> {
