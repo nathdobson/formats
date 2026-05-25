@@ -50,12 +50,13 @@ where
 mod allocating {
     use super::{OwnedToRef, RefToOwned};
     use alloc::boxed::Box;
+    use fallible_vec::{FallibleVec, SliceExt};
 
     impl<'a> RefToOwned<'a> for &'a [u8] {
         type Owned = Box<[u8]>;
 
         fn ref_to_owned(&self) -> Self::Owned {
-            Box::from(*self)
+            self.try_to_vec().expect("TODO").try_into_boxed_slice().expect("TODO")
         }
     }
 

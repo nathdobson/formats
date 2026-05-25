@@ -12,7 +12,7 @@ use std::{fs, path::Path};
 
 #[cfg(all(feature = "pem", feature = "std"))]
 use alloc::borrow::ToOwned;
-
+use fallible_vec::SliceExt;
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
@@ -27,13 +27,22 @@ use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 ///
 /// The [`SecretDocument`] provides a wrapper for this type with additional
 /// hardening applied.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub struct Document {
     /// ASN.1 DER encoded bytes.
     der_bytes: Vec<u8>,
 
     /// Length of this document.
     length: Length,
+}
+
+impl Clone for Document {
+    fn clone(&self) -> Self {
+        Document {
+            der_bytes: self.der_bytes.try_to_vec().expect("TODO"),
+            length: self.length,
+        }
+    }
 }
 
 impl Document {
@@ -55,7 +64,7 @@ impl Document {
 
     /// Return an ASN.1 DER-encoded byte vector.
     pub fn to_vec(&self) -> Vec<u8> {
-        self.der_bytes.clone()
+        self.der_bytes.try_to_vec().expect("TODO")
     }
 
     /// Get the length of the encoded ASN.1 DER in bytes.
@@ -147,7 +156,7 @@ impl<'a> Decode<'a> for Document {
         let bytes = reader.read_slice(length)?;
 
         Ok(Self {
-            der_bytes: bytes.into(),
+            der_bytes: bytes.try_to_vec().expect("TODO"),
             length,
         })
     }

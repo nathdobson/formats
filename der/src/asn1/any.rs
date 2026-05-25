@@ -9,6 +9,9 @@ use crate::{
 use core::cmp::Ordering;
 
 #[cfg(feature = "alloc")]
+use fallible_vec::try_vec;
+
+#[cfg(feature = "alloc")]
 use crate::SliceWriter;
 
 /// ASN.1 `ANY`: represents any explicitly tagged ASN.1 value.
@@ -158,6 +161,7 @@ mod allocating {
     use super::*;
     use crate::{referenced::*, BytesOwned};
     use alloc::boxed::Box;
+    use fallible_vec::FallibleVec;
 
     /// ASN.1 `ANY`: represents any explicitly tagged ASN.1 value.
     ///
@@ -202,11 +206,11 @@ mod allocating {
             T: Tagged + EncodeValue,
         {
             let encoded_len = usize::try_from(msg.value_len()?)?;
-            let mut buf = vec![0u8; encoded_len];
+            let mut buf = try_vec![0u8; encoded_len].expect("TODO");
             let mut writer = SliceWriter::new(&mut buf);
             msg.encode_value(&mut writer)?;
             writer.finish()?;
-            Any::new(msg.tag(), buf)
+            Any::new(msg.tag(), buf.try_into_boxed_slice().expect("TODO"))
         }
 
         /// Attempt to decode this value an ASN.1 `SEQUENCE`, creating a new
@@ -243,7 +247,7 @@ mod allocating {
     impl<'a> DecodeValue<'a> for Any {
         fn decode_value<R: Reader<'a>>(reader: &mut R, header: Header) -> Result<Self> {
             let value = reader.read_vec(header.length)?;
-            Self::new(header.tag, value)
+            Self::new(header.tag, value.try_into_boxed_slice().expect("TODO"))
         }
     }
 

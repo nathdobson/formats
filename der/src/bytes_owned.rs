@@ -7,15 +7,30 @@ use crate::{
 };
 use alloc::{boxed::Box, vec::Vec};
 use core::cmp::Ordering;
+use fallible_vec::{FallibleVec, SliceExt};
 
 /// Byte slice newtype which respects the `Length::max()` limit.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub(crate) struct BytesOwned {
     /// Precomputed `Length` (avoids possible panicking conversions)
     length: Length,
 
     /// Inner value
     inner: Box<[u8]>,
+}
+
+impl Clone for BytesOwned {
+    fn clone(&self) -> Self {
+        BytesOwned {
+            length: self.length,
+            inner: self
+                .inner
+                .try_to_vec()
+                .expect("TODO")
+                .try_into_boxed_slice()
+                .expect("TODO"),
+        }
+    }
 }
 
 impl BytesOwned {
@@ -54,7 +69,12 @@ impl AsRef<[u8]> for BytesOwned {
 
 impl<'a> DecodeValue<'a> for BytesOwned {
     fn decode_value<R: Reader<'a>>(reader: &mut R, header: Header) -> Result<Self> {
-        reader.read_vec(header.length).and_then(Self::new)
+        Ok(Self::new(
+            reader
+                .read_vec(header.length)?
+                .try_into_boxed_slice()
+                .expect("TODO"),
+        )?)
     }
 }
 
@@ -72,7 +92,7 @@ impl Default for BytesOwned {
     fn default() -> Self {
         Self {
             length: Length::ZERO,
-            inner: Box::new([]),
+            inner: Box::try_new([]).expect("TODO"),
         }
     }
 }
@@ -95,7 +115,11 @@ impl From<StrRef<'_>> for BytesOwned {
         debug_assert_eq!(bytes.len(), usize::try_from(s.length).expect("overflow"));
 
         BytesOwned {
-            inner: Box::from(bytes),
+            inner: bytes
+                .try_to_vec()
+                .expect("TODO")
+                .try_into_boxed_slice()
+                .expect("TODO"),
             length: s.length,
         }
     }
@@ -115,7 +139,12 @@ impl From<BytesRef<'_>> for BytesOwned {
     fn from(s: BytesRef<'_>) -> BytesOwned {
         BytesOwned {
             length: s.length,
-            inner: Box::from(s.inner),
+            inner: s
+                .inner
+                .try_to_vec()
+                .expect("TODO")
+                .try_into_boxed_slice()
+                .expect("TODO"),
         }
     }
 }
@@ -124,7 +153,13 @@ impl TryFrom<&[u8]> for BytesOwned {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Self> {
-        Self::new(bytes)
+        Self::new(
+            bytes
+                .try_to_vec()
+                .expect("TODO")
+                .try_into_boxed_slice()
+                .expect("TODO"),
+        )
     }
 }
 
@@ -140,7 +175,7 @@ impl TryFrom<Vec<u8>> for BytesOwned {
     type Error = Error;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self> {
-        Self::new(bytes)
+        Self::new(bytes.try_into_boxed_slice().expect("TODO"))
     }
 }
 

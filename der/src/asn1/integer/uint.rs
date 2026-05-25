@@ -163,6 +163,7 @@ mod allocating {
         BytesOwned, DecodeValue, EncodeValue, ErrorKind, FixedTag, Header, Length, Reader, Result,
         Tag, Writer,
     };
+    use fallible_vec::{FallibleVec, TryCollect};
 
     /// Unsigned arbitrary precision ASN.1 `INTEGER` type.
     ///
@@ -180,8 +181,16 @@ mod allocating {
     impl Uint {
         /// Create a new [`Uint`] from a byte slice.
         pub fn new(bytes: &[u8]) -> Result<Self> {
-            let inner = BytesOwned::new(strip_leading_zeroes(bytes))
-                .map_err(|_| ErrorKind::Length { tag: Self::TAG })?;
+            let inner = BytesOwned::new(
+                strip_leading_zeroes(bytes)
+                    .iter()
+                    .cloned()
+                    .try_collect()
+                    .expect("TODO")
+                    .try_into_boxed_slice()
+                    .expect("TODO"),
+            )
+            .map_err(|_| ErrorKind::Length { tag: Self::TAG })?;
 
             Ok(Self { inner })
         }
@@ -236,7 +245,17 @@ mod allocating {
 
     impl<'a> From<&UintRef<'a>> for Uint {
         fn from(value: &UintRef<'a>) -> Uint {
-            let inner = BytesOwned::new(value.as_bytes()).expect("Invalid Uint");
+            let inner = BytesOwned::new(
+                value
+                    .as_bytes()
+                    .iter()
+                    .cloned()
+                    .try_collect()
+                    .expect("TODO")
+                    .try_into_boxed_slice()
+                    .expect("TODO"),
+            )
+            .expect("Invalid Uint");
             Uint { inner }
         }
     }

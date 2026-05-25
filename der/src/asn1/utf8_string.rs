@@ -5,11 +5,11 @@ use crate::{
     Writer,
 };
 use core::{fmt, ops::Deref, str};
-
+use fallible_vec::StrExt;
 #[cfg(feature = "alloc")]
 use {
     crate::{DecodeValue, Header, Reader},
-    alloc::{borrow::ToOwned, string::String},
+    alloc::{ string::String},
 };
 
 /// ASN.1 `UTF8String` type.
@@ -101,7 +101,7 @@ impl OrdIsValueOrd for str {}
 #[cfg(feature = "alloc")]
 impl<'a> From<Utf8StringRef<'a>> for String {
     fn from(s: Utf8StringRef<'a>) -> String {
-        s.as_str().to_owned()
+        s.as_str().try_to_string().expect("TODO")
     }
 }
 
@@ -110,7 +110,7 @@ impl<'a> TryFrom<AnyRef<'a>> for String {
     type Error = Error;
 
     fn try_from(any: AnyRef<'a>) -> Result<String> {
-        Utf8StringRef::try_from(any).map(|s| s.as_str().to_owned())
+        Utf8StringRef::try_from(any).map(|s| s.as_str().try_to_string().expect("TODO"))
     }
 }
 

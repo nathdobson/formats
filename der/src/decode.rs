@@ -94,6 +94,6 @@ where
     T: DecodeValue<'a>,
 {
     fn decode_value<R: Reader<'a>>(reader: &mut R, header: Header) -> Result<Self> {
-        Ok(Box::new(T::decode_value(reader, header)?))
+        Ok(Box::try_new(T::decode_value(reader, header)?).expect("TODO"))
     }
 }

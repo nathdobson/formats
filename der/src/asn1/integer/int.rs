@@ -171,6 +171,7 @@ mod allocating {
         Tag, Writer,
     };
     use alloc::vec::Vec;
+    use fallible_vec::{FallibleVec, TryCollect};
 
     /// Signed arbitrary precision ASN.1 `INTEGER` type.
     ///
@@ -188,8 +189,16 @@ mod allocating {
     impl Int {
         /// Create a new [`Int`] from a byte slice.
         pub fn new(bytes: &[u8]) -> Result<Self> {
-            let inner = BytesOwned::new(strip_leading_ones(bytes))
-                .map_err(|_| ErrorKind::Length { tag: Self::TAG })?;
+            let inner = BytesOwned::new(
+                strip_leading_ones(bytes)
+                    .iter()
+                    .cloned()
+                    .try_collect()
+                    .expect("TODO")
+                    .try_into_boxed_slice()
+                    .expect("TODO"),
+            )
+            .map_err(|_| ErrorKind::Length { tag: Self::TAG })?;
 
             Ok(Self { inner })
         }
@@ -242,7 +251,17 @@ mod allocating {
 
     impl<'a> From<&IntRef<'a>> for Int {
         fn from(value: &IntRef<'a>) -> Int {
-            let inner = BytesOwned::new(value.as_bytes()).expect("Invalid Int");
+            let inner = BytesOwned::new(
+                value
+                    .as_bytes()
+                    .iter()
+                    .cloned()
+                    .try_collect()
+                    .expect("TODO")
+                    .try_into_boxed_slice()
+                    .expect("TODO"),
+            )
+            .expect("Invalid Int");
             Int { inner }
         }
     }
@@ -253,11 +272,12 @@ mod allocating {
 
             // Add leading `0x00` byte if required
             if value.value_len().expect("invalid Uint") > value.len() {
-                inner.push(0x00);
+                inner.try_push(0x00).expect("TODO");
             }
 
-            inner.extend_from_slice(value.as_bytes());
-            let inner = BytesOwned::new(inner).expect("invalid Uint");
+            inner.try_extend_from_slice(value.as_bytes()).expect("TODO");
+            let inner =
+                BytesOwned::new(inner.try_into_boxed_slice().expect("TODO")).expect("invalid Uint");
 
             Int { inner }
         }

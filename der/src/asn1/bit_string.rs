@@ -214,12 +214,13 @@ mod allocating {
     use super::*;
     use crate::referenced::*;
     use alloc::vec::Vec;
+    use fallible_vec::TryCollect;
 
     /// Owned form of ASN.1 `BIT STRING` type.
     ///
     /// This type provides the same functionality as [`BitStringRef`] but owns the
     /// backing data.
-    #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+    #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
     pub struct BitString {
         /// Number of unused bits in the final octet.
         unused_bits: u8,
@@ -229,6 +230,16 @@ mod allocating {
 
         /// Bitstring represented as a slice of bytes.
         inner: Vec<u8>,
+    }
+
+    impl Clone for BitString {
+        fn clone(&self) -> Self {
+            BitString {
+                unused_bits: self.unused_bits,
+                bit_length: self.bit_length,
+                inner: self.inner.iter().cloned().try_collect().expect("TODO"),
+            }
+        }
     }
 
     impl BitString {
@@ -256,7 +267,7 @@ mod allocating {
         ///
         /// The "unused bits" are set to 0.
         pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-            Self::new(0, bytes)
+            Self::new(0, bytes.iter().cloned().try_collect().expect("TODO"))
         }
 
         /// Get the number of unused bits in the octet serialization of this
@@ -372,7 +383,7 @@ mod allocating {
             BitString {
                 unused_bits: self.unused_bits,
                 bit_length: self.bit_length,
-                inner: Vec::from(self.inner.as_slice()),
+                inner: self.inner.as_slice().iter().cloned().try_collect().expect("TODO"),
             }
         }
     }

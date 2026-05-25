@@ -15,6 +15,9 @@ use crate::{
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
+#[cfg(feature = "alloc")]
+use fallible_vec::try_vec;
+
 /// Reader trait which reads DER-encoded input.
 pub trait Reader<'r>: Sized {
     /// Get the length of the input.
@@ -136,7 +139,7 @@ pub trait Reader<'r>: Sized {
     /// Read a byte vector of the given length.
     #[cfg(feature = "alloc")]
     fn read_vec(&mut self, len: Length) -> Result<Vec<u8>> {
-        let mut bytes = vec![0u8; usize::try_from(len)?];
+        let mut bytes = try_vec![0u8; usize::try_from(len)?].expect("TODO");
         self.read_into(&mut bytes)?;
         Ok(bytes)
     }

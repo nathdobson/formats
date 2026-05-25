@@ -2,7 +2,7 @@
 
 use crate::{Header, Length, Result, SliceWriter, Tagged, Writer};
 use core::marker::PhantomData;
-
+use fallible_vec::FallibleVec;
 #[cfg(feature = "alloc")]
 use {alloc::boxed::Box, alloc::vec::Vec, core::iter};
 
@@ -40,8 +40,8 @@ pub trait Encode {
     #[cfg(feature = "alloc")]
     fn encode_to_vec(&self, buf: &mut Vec<u8>) -> Result<Length> {
         let expected_len = usize::try_from(self.encoded_len()?)?;
-        buf.reserve(expected_len);
-        buf.extend(iter::repeat(0).take(expected_len));
+        buf.try_reserve(expected_len).expect("TODO");
+        buf.try_extend(iter::repeat(0).take(expected_len)).expect("TODO");
 
         let mut writer = SliceWriter::new(buf);
         self.encode(&mut writer)?;

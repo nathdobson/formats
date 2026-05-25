@@ -15,7 +15,8 @@ use crate::{
     ErrorKind, FixedTag, Header, Length, Reader, Result, Tag, ValueOrd, Writer,
 };
 use core::cmp::Ordering;
-
+#[cfg(feature = "alloc")]
+use fallible_vec::{FallibleVec, TryCollect};
 #[cfg(feature = "alloc")]
 use {alloc::vec::Vec, core::slice};
 
@@ -198,12 +199,21 @@ impl<'a, T> ExactSizeIterator for SetOfIter<'a, T> {}
 /// This type implements an append-only `SET OF` type which is heap-backed
 /// and depends on `alloc` support.
 #[cfg(feature = "alloc")]
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SetOfVec<T>
 where
     T: DerOrd,
 {
     inner: Vec<T>,
+}
+
+#[cfg(feature = "alloc")]
+impl<T: DerOrd + Clone> Clone for SetOfVec<T> {
+    fn clone(&self) -> Self {
+        SetOfVec {
+            inner: self.inner.iter().cloned().try_collect().expect("TODO"),
+        }
+    }
 }
 
 #[cfg(feature = "alloc")]
@@ -236,7 +246,7 @@ where
     where
         I: IntoIterator<Item = T>,
     {
-        Vec::from_iter(iter).try_into()
+        iter.try_collect().expect("TODO").try_into()
     }
 
     /// Add an element to this [`SetOfVec`].
@@ -256,13 +266,13 @@ where
     where
         I: IntoIterator<Item = T>,
     {
-        self.inner.extend(iter);
+        self.inner.try_extend(iter).expect("TODO");
         der_sort(&mut self.inner)
     }
 
     /// Insert an item into this [`SetOfVec`]. Must be unique.
     pub fn insert(&mut self, item: T) -> Result<()> {
-        self.inner.push(item);
+        self.inner.try_push(item).expect("TODO");
         der_sort(&mut self.inner)
     }
 
@@ -276,7 +286,7 @@ where
             check_der_ordering(last, &item)?;
         }
 
-        self.inner.push(item);
+        self.inner.try_push(item).expect("TODO");
         Ok(())
     }
 
@@ -331,7 +341,7 @@ where
             let mut inner = Vec::new();
 
             while !reader.is_finished() {
-                inner.push(T::decode(reader)?);
+                inner.try_push(T::decode(reader)?).expect("TODO");
             }
 
             der_sort(inner.as_mut())?;
@@ -399,7 +409,7 @@ where
     type Error = Error;
 
     fn try_from(arr: [T; N]) -> Result<SetOfVec<T>> {
-        Vec::from(arr).try_into()
+        arr.into_iter().try_collect().expect("TODO").try_into()
     }
 }
 

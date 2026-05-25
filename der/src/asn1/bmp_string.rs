@@ -6,6 +6,7 @@ use crate::{
 };
 use alloc::{boxed::Box, vec::Vec};
 use core::{fmt, str::FromStr};
+use fallible_vec::FallibleVec;
 
 /// ASN.1 `BMPString` type.
 ///
@@ -48,13 +49,13 @@ impl BmpString {
             .checked_mul(2)
             .ok_or_else(|| Tag::BmpString.length_error())?;
 
-        let mut bytes = Vec::with_capacity(capacity);
+        let mut bytes = Vec::try_with_capacity(capacity).expect("TODO");
 
         for code_point in utf8.encode_utf16() {
-            bytes.extend(code_point.to_be_bytes());
+            bytes.try_extend(code_point.to_be_bytes()).expect("TODO");
         }
 
-        Self::from_ucs2(bytes)
+        Self::from_ucs2(bytes.try_into_boxed_slice().expect("TODO"))
     }
 
     /// Borrow the encoded UCS-2 as bytes.
@@ -91,7 +92,7 @@ impl AsRef<[u8]> for BmpString {
 
 impl<'a> DecodeValue<'a> for BmpString {
     fn decode_value<R: Reader<'a>>(reader: &mut R, header: Header) -> Result<Self> {
-        Self::from_ucs2(reader.read_vec(header.length)?)
+        Self::from_ucs2(reader.read_vec(header.length)?.try_into_boxed_slice().expect("TODO"))
     }
 }
 

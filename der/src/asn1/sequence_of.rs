@@ -8,6 +8,8 @@ use core::cmp::Ordering;
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+#[cfg(feature = "alloc")]
+use fallible_vec::FallibleVec;
 
 /// ASN.1 `SEQUENCE OF` backed by an array.
 ///
@@ -187,7 +189,7 @@ where
             let mut sequence_of = Self::new();
 
             while !reader.is_finished() {
-                sequence_of.push(T::decode(reader)?);
+                sequence_of.try_push(T::decode(reader)?).expect("TODO");
             }
 
             Ok(sequence_of)

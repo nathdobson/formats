@@ -102,6 +102,7 @@ mod allocating {
     use super::*;
     use crate::referenced::*;
     use alloc::vec::Vec;
+    use fallible_vec::TryCollect;
 
     /// ASN.1 `OCTET STRING` type: owned form..
     ///
@@ -109,10 +110,18 @@ mod allocating {
     ///
     /// This type provides the same functionality as [`OctetStringRef`] but owns
     /// the backing data.
-    #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+    #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
     pub struct OctetString {
         /// Bitstring represented as a slice of bytes.
         pub(super) inner: Vec<u8>,
+    }
+
+    impl Clone for OctetString {
+        fn clone(&self) -> Self {
+            OctetString {
+                inner: self.inner.iter().cloned().try_collect().expect("TODO"),
+            }
+        }
     }
 
     impl OctetString {
@@ -188,7 +197,13 @@ mod allocating {
         type Owned = OctetString;
         fn ref_to_owned(&self) -> Self::Owned {
             OctetString {
-                inner: Vec::from(self.inner.as_slice()),
+                inner: self
+                    .inner
+                    .as_slice()
+                    .iter()
+                    .cloned()
+                    .try_collect()
+                    .expect("TODO"),
             }
         }
     }

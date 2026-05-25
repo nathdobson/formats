@@ -1,3 +1,5 @@
+#![feature(try_with_capacity)]
+#![feature(allocator_api)]
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
@@ -24,6 +26,7 @@
     unused_lifetimes,
     unused_qualifications
 )]
+#![deny(unused_must_use)]
 
 //! # Usage
 //! ## [`Decode`] and [`Encode`] traits

@@ -7,15 +7,25 @@ use crate::{
 };
 use alloc::string::String;
 use core::str;
+use fallible_vec::{SliceExt, StrExt};
 
 /// String newtype which respects the [`Length::max`] limit.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct StrOwned {
     /// Inner value
     pub(crate) inner: String,
 
     /// Precomputed `Length` (avoids possible panicking conversions)
     pub(crate) length: Length,
+}
+
+impl Clone for StrOwned {
+    fn clone(&self) -> Self {
+        StrOwned {
+            inner: self.inner.try_to_string().expect("TODO"),
+            length: self.length,
+        }
+    }
 }
 
 impl StrOwned {
@@ -30,7 +40,7 @@ impl StrOwned {
     /// Parse a [`String`] from UTF-8 encoded bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         Ok(Self {
-            inner: String::from_utf8(bytes.to_vec())?,
+            inner: String::from_utf8(bytes.try_to_vec().expect("TODO"))?,
             length: Length::try_from(bytes.len())?,
         })
     }
@@ -87,7 +97,7 @@ impl EncodeValue for StrOwned {
 impl From<StrRef<'_>> for StrOwned {
     fn from(s: StrRef<'_>) -> StrOwned {
         Self {
-            inner: String::from(s.inner),
+            inner: s.inner.try_to_string().expect("TODO"),
             length: s.length,
         }
     }
